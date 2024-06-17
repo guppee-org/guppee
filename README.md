@@ -1,12 +1,12 @@
 # Fishy Game about fishes, using WebGl, Unity, etc.
 
 ## Proof of Concept
-- [ ] Fishes have hunger.
-- [ ] User feeds the fish.
-- [ ] Fish gets less hungry when fed.
-- [ ] When fish runs out of hunger, dies
-- [ ] Fish can be sacrificed for.. Lootboxes?
-- [ ] Data is persisted. When the user returns after a long period, fish lost hunger / died.
+- [ ]: Fishes have hunger.
+- [ ]: User feeds the fish.
+- [ ]: Fish gets less hungry when fed.
+- [ ]: When fish runs out of hunger, dies
+- [ ]: Fish can be sacrificed for.. Lootboxes?
+- [ ]: Data is persisted. When the user returns after a long period, fish lost hunger / died.
 
 Covers most of CRUD just to prove we know how to do it.
 
