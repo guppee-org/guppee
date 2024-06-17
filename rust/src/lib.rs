@@ -18,7 +18,7 @@ impl App {
         let router = Router::new()
             .route_service("/", ServeDir::new(dir.clone()))
             .with_state(App {});
-        let addr = "127.0.0.1:8080";
+        let addr = "0.0.0.0:8080";
         let tcp_listener = TcpListener::bind(addr).await?;
         println!("serving {dir} on {addr}");
         axum::serve(tcp_listener, router).await?;

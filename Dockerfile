@@ -10,5 +10,6 @@ RUN rustup default nightly
 
 COPY dist /dist
 COPY run.sh /run.sh
+COPY rust /rust
 
-RUN run.sh
+ENTRYPOINT ./run.sh
