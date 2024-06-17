@@ -15,7 +15,7 @@ enum Command {
         #[arg(short, long, default_value_t = String::from("dist"))]
         dir: String,
         /// The port to serve on.
-        #[arg(short, long, default_value_t = String::from("8080"))]
+        #[arg(short, long, default_value_t = String::from("8081"))]
         port: String,
     },
 }
