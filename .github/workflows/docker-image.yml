@@ -2,7 +2,7 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "Actions" ]
 
 
 jobs:
@@ -15,5 +15,3 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag guppee:$(date +%s)
-
-          
