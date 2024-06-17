@@ -7,5 +7,8 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN rustup install nightly
 RUN rustup default nightly
 
-COPY dist /dist
 
+COPY dist /dist
+COPY run.sh /run.sh
+
+RUN run.sh
