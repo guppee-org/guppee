@@ -12,4 +12,5 @@ COPY dist /dist
 COPY run.sh /run.sh
 COPY rust /rust
 
+EXPOSE 8080
 ENTRYPOINT ./run.sh
