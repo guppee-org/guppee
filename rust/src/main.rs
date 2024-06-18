@@ -1,31 +1,19 @@
-use clap::{Parser, Subcommand};
 use tokio::runtime::Runtime;
-
-#[derive(Parser)]
-struct Args {
-    #[command(subcommand)]
-    command: Command,
-}
-
-#[derive(Subcommand, Debug)]
-enum Command {
-    /// Start the server.
-    Serve {
-        /// The directory to serve.
-        #[arg(short, long, default_value_t = String::from("dist"))]
-        dir: String,
-        /// The port to serve on.
-        #[arg(short, long, default_value_t = String::from("8081"))]
-        port: String,
-    },
-}
+use tracing_subscriber::EnvFilter;
 
 fn main() -> server::Result<()> {
-    match Args::parse().command {
-        Command::Serve { dir, .. } => {
-            let rt = Runtime::new()?;
-            rt.block_on(server::App::start(dir))?;
-        }
+    let args = &mut std::env::args();
+    let quiet = args.nth(1).is_some_and(|e| e == "--quiet");
+
+    if !quiet {
+        tracing_subscriber::fmt()
+            .with_env_filter(EnvFilter::try_from_default_env().unwrap_or("server=info".parse()?))
+            .pretty()
+            .init();
+        tracing::info!("tracing enabled")
     }
+
+    let rt = Runtime::new()?;
+    rt.block_on(server::start())?;
     Ok(())
 }
