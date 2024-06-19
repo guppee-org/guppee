@@ -9,8 +9,7 @@ RUN rustup default nightly
 
 
 COPY dist /dist
-COPY run.sh /run.sh
-COPY rust /rust
+COPY server /server
 
 EXPOSE 8080
-ENTRYPOINT ./run.sh
+ENTRYPOINT cargo run --manifest-path=server/Cargo.toml --release
