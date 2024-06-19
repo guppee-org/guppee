@@ -27,4 +27,3 @@ Need to understand how to database calls / http requests happen in webgl / unity
 - [ ]: Display fish to user (static image of fish, or just their name).
 - [ ]: Show how hungry the fish is.
 - [ ]: Communicate state changes to the database.
-
