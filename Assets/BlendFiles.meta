@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<< HEAD
 guid: a2c22c0dc1285b74f8553745c75611ae
+=======
+guid: ef4384b8a3cb407408b3432279a304b8
+>>>>>>> f59ac6a (feat: create board tiles)
 folderAsset: yes
 DefaultImporter:
   externalObjects: {}

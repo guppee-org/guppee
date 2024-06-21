@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<< HEAD
 guid: 6dd32d11e5f29e646806c9ee741d0f27
+=======
+guid: 410d221a5113bb3498e8580d0f0f1c8d
+>>>>>>> f59ac6a (feat: create board tiles)
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
