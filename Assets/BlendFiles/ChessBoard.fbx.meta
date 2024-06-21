@@ -1,9 +1,22 @@
 fileFormatVersion: 2
+<<<<<<< HEAD
 guid: 0d4a4f9369f5e5e4486d9cc3b38c08e9
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
   externalObjects: {}
+=======
+guid: fc0c2168aa6080d42ad8d9d67138b6be
+ModelImporter:
+  serializedVersion: 22200
+  internalIDToNameTable: []
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Board_Top
+    second: {fileID: 2100000, guid: f9ec5d7bbe2c5814a885893fd0405463, type: 2}
+>>>>>>> f59ac6a (feat: create board tiles)
   materials:
     materialImportMode: 2
     materialName: 0

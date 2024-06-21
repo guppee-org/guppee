@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<< HEAD
 guid: 537fac1c22f2850448d69ca029ef3373
+=======
+guid: 670f3a18a8765ec44925657d2b096295
+>>>>>>> f59ac6a (feat: create board tiles)
 DefaultImporter:
   externalObjects: {}
   userData: 
