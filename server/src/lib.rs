@@ -1,6 +1,8 @@
+mod ws;
+
 use std::future::IntoFuture;
 
-use axum::routing::Router;
+use axum::routing::{get, Router};
 use thiserror::Error;
 use tokio::{net::TcpListener, select};
 use tower_http::{services::ServeDir, trace::TraceLayer};
@@ -28,6 +30,7 @@ pub enum Error {
 #[instrument(level = Level::TRACE, ret)]
 pub async fn start() -> Result<()> {
     let router = Router::new()
+        .route("/ws", get(crate::ws::handler))
         .nest_service("/", ServeDir::new(DIST))
         .layer(TraceLayer::new_for_http());
 
