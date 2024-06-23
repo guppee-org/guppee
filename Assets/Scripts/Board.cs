@@ -7,6 +7,8 @@ public class Board : MonoBehaviour
     public Tile[,] board = new Tile[8, 8];
     public Collider boardCollider;
     private Vector3 boardBounds;
+    public float boardHeight = 0.6f;
+    public GameObject pawnPrefab;
 
     // Start is called before the first frame update
     void Start()
@@ -24,7 +26,7 @@ public class Board : MonoBehaviour
             for (int j = 0; j < 8; j++)
             {
                 GameObject tile = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                tile.transform.position = new Vector3((i * cellSize) - offset, 20, (j * cellSize) - offset);
+                tile.transform.position = new Vector3((i * cellSize) - offset, boardHeight, (j * cellSize) - offset);
                 tile.transform.localScale = new Vector3(cellSize, 0.1f, cellSize);
                 tile.transform.parent = this.transform;
                 tile.AddComponent<Tile>();
@@ -43,6 +45,11 @@ public class Board : MonoBehaviour
                 color = !color;
             }
         }
+        // board[0, 0].piece = new Piece(PieceType.ROOK, true);
+        Piece pawn = Instantiate(pawnPrefab, board[0, 0].transform.position, transform.rotation).AddComponent(typeof(Piece)) as Piece;
+        pawn.board = board;
+        pawn.currentTile = board[0, 0];
+        board[0, 0].piece = pawn.GetComponent<Piece>();
     }
 
     // Update is called once per frame
