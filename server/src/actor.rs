@@ -5,7 +5,7 @@
 //! * [`Handle`] - Communication handle.
 //! * [`Message`] - Message spec.
 
-use std::{collections::HashMap, convert::Infallible};
+use std::{collections::HashMap, convert::Infallible, time::Duration};
 
 use axum::{
     async_trait,
@@ -16,7 +16,11 @@ use axum::{
     http::request::Parts,
 };
 use serde::{Deserialize, Serialize};
-use tokio::sync::{mpsc, oneshot};
+use tokio::{
+    select,
+    sync::{mpsc, oneshot},
+    time::sleep,
+};
 use tracing::{debug, info, instrument, Level};
 use uuid::Uuid;
 
@@ -45,27 +49,29 @@ impl Actor {
         Handle { sender }
     }
 
+    #[instrument(skip_all, level = Level::TRACE)]
     async fn on_tick(map: &mut HashMap<PlayerId, Player>) {
+        // PERF(low): Have a fixed buffer higher up in the call stack.
         let mut made_games = Vec::new();
         for player in map.values_mut() {
-            if let Some(ref invite) = player.invite_from {
+            if let Some(ref invite) = player.inbound_invite {
                 if !player.notified_of_invite {
                     let notice = serde_json::to_string(&invite).unwrap();
                     player.socket.send(ws::Message::Text(notice)).await.unwrap();
                     player.notified_of_invite = true;
                 } else if player.accepted_invite {
-                    made_games.push((player.id(), *invite)); // Deref to drop
-                                                             // the borrow.
+                    // Deref to drop the borrow.
+                    made_games.push((player.id(), *invite));
                 }
             }
         }
 
-        for (player_1_id, player_2_id) in made_games.drain(..) {
-            if let Some(player_1) = map.remove(&player_1_id) {
-                if let Some(player_2) = map.remove(&player_2_id) {
+        for (p1id, p2id) in made_games {
+            if let Some(p1) = map.remove(&p1id) {
+                if let Some(p2) = map.remove(&p2id) {
                     tokio::spawn(async move {
-                        let ids = [player_1.id(), player_2.id()];
-                        let result = play_game(player_1, player_2).await;
+                        let ids = [p1.id(), p2.id()];
+                        let result = play_game(p1, p2).await;
                         info!(game.members = ?ids, game.result = ?result);
                     });
                 }
@@ -75,16 +81,16 @@ impl Actor {
 
     #[instrument(skip_all)]
     async fn run_loop(mut receiver: mpsc::Receiver<Message>) -> Result<()> {
-        let mut player_map = HashMap::<PlayerId, Player>::new();
+        let mut pool = HashMap::<PlayerId, Player>::new();
         loop {
-            let ticker = tokio::time::sleep(std::time::Duration::from_secs(2));
-            tokio::select! {
+            select! {
                 Some(message) = receiver.recv() => {
-                    Self::on_message(&mut player_map, message).await.ok();
+                    Self::on_message(&mut pool, message).await.ok();
                 },
-                _ = ticker => {
-                    Self::on_tick(&mut player_map).await
+                _ = sleep(Duration::from_secs(2)) => {
+                    Self::on_tick(&mut pool).await
                 },
+                // TODO: await a handle from the server for shutdown.
                 _ = tokio::signal::ctrl_c() => {
                     info!("received ctrl C");
                     break;
@@ -107,45 +113,35 @@ impl Actor {
                 let send_result = reply.send(player_list);
                 debug!(?send_result);
             }
-            Message::Invite { sender, target } => {
-                match map.get_mut(&target) {
-                    Some(target_player) => {
-                        target_player.invite_from = Some(sender);
-                        match map.get_mut(&sender) {
-                            Some(target_sender) => {
-                                target_sender.sent_invite = Some(target);
-                            }
-                            None => {
-                                debug!(
-                                    invite.sender = sender.to_string(),
-                                    invite.target = target.to_string(),
-                                    "sender was not found, ignoring invite"
-                                );
-                                let target = map
-                                    .get_mut(&target)
-                                    .expect("just found it one and no other mutable references");
-                                target.invite_from = None;
-                            }
-                        }
-                    }
-                    None => {
-                        debug!(
-                            invite.sender = sender.to_string(),
-                            invite.target = target.to_string(),
-                            "target was not found, ignoring invite"
-                        );
-                    }
+            Message::Invite(invite) => {
+                let Invite {
+                    sender_id,
+                    target_id,
+                } = invite;
+
+                let log = move |msg| {
+                    debug!(
+                        invite.sender = sender_id.to_string(),
+                        invite.target = target_id.to_string(),
+                        invite.message = msg,
+                        invite.ignore = true,
+                    )
                 };
-                match map.get_mut(&sender) {
-                    Some(player) => player.sent_invite = Some(target),
-                    None => {
-                        debug!(
-                            invite.sender = sender.to_string(),
-                            invite.target = target.to_string(),
-                            "sender was not found, ignoring invite"
-                        );
-                    }
+
+                let Some(target) = map.get_mut(&target_id) else {
+                    log("target was not found");
+                    return Ok(());
                 };
+                target.inbound_invite = Some(sender_id);
+
+                let Some(sender) = map.get_mut(&sender_id) else {
+                    log("sender was not found");
+                    return Ok(());
+                };
+                sender.outbound_invite = Some(target_id);
+
+                map.get_mut(&target_id)
+                    .and_then(|target| target.inbound_invite.take());
             }
         };
         Ok(())
@@ -154,15 +150,15 @@ impl Actor {
 
 #[allow(unused)]
 async fn play_game(player1: Player, player2: Player) -> Result<()> {
-    Ok(())
+    Ok(()) // TODO: Proxy the connections
 }
 
 #[derive(Debug, Serialize)]
 pub struct Player {
     id: PlayerId,
     /// Has this player invited another player to a game?
-    sent_invite: Option<PlayerId>,
-    invite_from: Option<PlayerId>,
+    outbound_invite: Option<PlayerId>,
+    inbound_invite: Option<PlayerId>,
     notified_of_invite: bool,
     accepted_invite: bool,
     #[serde(skip_serializing)] // This cannot be serialized to the client
@@ -181,8 +177,8 @@ impl Player {
             socket,
             id,
             accepted_invite: Default::default(),
-            sent_invite: Default::default(),
-            invite_from: Default::default(),
+            outbound_invite: Default::default(),
+            inbound_invite: Default::default(),
             notified_of_invite: Default::default(),
         })
     }
@@ -229,6 +225,12 @@ impl Handle {
     }
 }
 
+/// Pair of [`PlayerId`] with a target and sender requesting a game.
+pub struct Invite {
+    pub sender_id: PlayerId,
+    pub target_id: PlayerId,
+}
+
 /// Requests and their related responses for the [`Actor`].
 pub enum Message {
     /// Register a [`WebSocket`] for conversion to a [`Player`], adding to the
@@ -239,10 +241,7 @@ pub enum Message {
     Register(WebSocket),
     /// Request a [`Vec`] of [`PlayerId`] from the [`Actor`].
     PlayerList(oneshot::Sender<Vec<PlayerId>>),
-    Invite {
-        sender: PlayerId,
-        target: PlayerId,
-    },
+    Invite(Invite),
 }
 
 // Allows the Handle to be easily extracted from a request handler.
