@@ -3,11 +3,10 @@ use std::{collections::VecDeque, convert::Infallible};
 use axum::{
     async_trait,
     extract::{
-        ws::{self, WebSocket, WebSocketUpgrade},
+        ws::{self, WebSocket},
         FromRequestParts,
     },
     http::request::Parts,
-    response::Response,
 };
 use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, oneshot};
