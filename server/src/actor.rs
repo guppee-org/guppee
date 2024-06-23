@@ -21,7 +21,7 @@ use tokio::{
     sync::{mpsc, oneshot},
     time::sleep,
 };
-use tracing::{debug, info, instrument, Level};
+use tracing::{debug, error, info, instrument, trace, warn, Level};
 use uuid::Uuid;
 
 use crate::Result;
@@ -53,13 +53,33 @@ impl Actor {
     async fn on_tick(map: &mut HashMap<PlayerId, Player>) {
         // PERF(low): Have a fixed buffer higher up in the call stack.
         let mut made_games = Vec::new();
+        let mut drop_list = Vec::new();
         let player_list = map.keys().cloned().collect::<Vec<_>>();
         let serialized_player_list = serde_json::to_string(&player_list).unwrap();
+
         for player in map.values_mut() {
             // PERF(high): Sending player list every tick means serializing all the
             // connected IDs on every tick as well.
             let msg = ws::Message::Text(serialized_player_list.clone());
-            player.socket.send(msg).await.unwrap();
+            if let Err(err) = player.socket.send(msg).await {
+                // There is no way to match on this error that I know of.
+                // It is a very opaque type and Box< >'ed pretty far down.
+                if err.to_string().contains("Broken pipe") {
+                    error!(
+                        player.id = player.id().to_string(),
+                        player.socket.error = err.to_string(),
+                        "adding to drop list"
+                    );
+                    drop_list.push(player.id());
+                    continue;
+                } else {
+                    warn!(
+                        player.id = player.id().to_string(),
+                        player.socket.error = err.to_string(),
+                        "ignoring error"
+                    );
+                }
+            }
             if let Some(ref invite) = player.inbound_invite {
                 if !player.notified_of_invite {
                     let notice = serde_json::to_string(&invite).unwrap();
@@ -82,6 +102,26 @@ impl Actor {
                     });
                 }
             }
+        }
+
+        for dead_socket in drop_list {
+            let dropping = map.remove(&dead_socket).expect("no interior mutability");
+            trace!(drop.player = ?dropping);
+            let Player {
+                outbound_invite,
+                inbound_invite,
+                ..
+            } = dropping;
+            if let Some(invite) = outbound_invite {
+                map.get_mut(&invite)
+                    .and_then(|invited| invited.inbound_invite.take());
+            };
+            if let Some(invite) = inbound_invite {
+                map.get_mut(&invite)
+                    .and_then(|inviter| inviter.outbound_invite.take());
+            };
+            // Do not need to close the connection ourselves as the Drop impl
+            // for the WebSocket struct drops any open connections.
         }
     }
 
