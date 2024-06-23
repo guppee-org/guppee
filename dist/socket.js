@@ -8,6 +8,13 @@ function start_socket() {
   };
 }
 
-function player_list() {
+async function player_list() {
+  const playlist = await fetch("/players");
+  console.log(playlist);
+}
 
+function start_unity() {
+    const template = document.querySelector("#unity-container-wrapper");
+    const clone = template.content.cloneNode(true);
+    document.body.appendChild(clone);
 }
