@@ -190,9 +190,17 @@ impl Player {
 }
 
 /// Unique identifier for the [`Player`].
-#[derive(Clone, Copy, Deserialize, Serialize, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Deserialize, Serialize, Debug, PartialEq, Eq, Hash)]
 pub struct PlayerId {
     uuid: Uuid,
+}
+
+impl Default for PlayerId {
+    fn default() -> Self {
+        Self {
+            uuid: Uuid::new_v4(),
+        }
+    }
 }
 
 impl std::fmt::Display for PlayerId {
