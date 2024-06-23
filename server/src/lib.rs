@@ -6,7 +6,7 @@ use std::future::IntoFuture;
 use axum::{routing::get, Json, Router};
 use tokio::{net::TcpListener, select};
 use tower_http::{services::ServeDir, trace::TraceLayer};
-use tracing::{info, instrument, trace, Level};
+use tracing::{debug, error, info, instrument, trace, Level};
 
 use crate::actor::{Actor, Handle, PlayerId};
 
@@ -64,12 +64,16 @@ async fn player_list(handle: Handle) -> Result<Json<Vec<PlayerId>>> {
     Ok(Json(list))
 }
 
-#[instrument(skip_all)]
+#[instrument(skip_all, ret(level = Level::DEBUG))]
 pub async fn websocket_handler(
     handle: Handle,
     ws: axum::extract::WebSocketUpgrade,
 ) -> axum::response::Response {
-    ws.on_upgrade(move |ws| async move {
-        handle.register(ws).await;
-    })
+    let callback = move |ws| async move {
+        match handle.register(ws).await {
+            Ok(_) => debug!(server.actor = "registered"),
+            Err(err) => error!(server.actor = format!("registration failure: {err}")),
+        }
+    };
+    ws.on_upgrade(callback)
 }
