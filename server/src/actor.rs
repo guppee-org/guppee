@@ -98,7 +98,6 @@ impl Actor {
                     tokio::spawn(async move {
                         let ids = [p1.id(), p2.id()];
                         let result = play_game(p1, p2).await;
-                        info!(game.members = ?ids, game.result = ?result);
                     });
                 }
             }
@@ -106,7 +105,7 @@ impl Actor {
 
         for dead_socket in drop_list {
             let dropping = map.remove(&dead_socket).expect("no interior mutability");
-            trace!(drop.player = ?dropping);
+            trace!(drop.player = %dropping.id());
             let Player {
                 outbound_invite,
                 inbound_invite,
