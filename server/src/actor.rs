@@ -53,7 +53,13 @@ impl Actor {
     async fn on_tick(map: &mut HashMap<PlayerId, Player>) {
         // PERF(low): Have a fixed buffer higher up in the call stack.
         let mut made_games = Vec::new();
+        let player_list = map.keys().cloned().collect::<Vec<_>>();
+        let serialized_player_list = serde_json::to_string(&player_list).unwrap();
         for player in map.values_mut() {
+            // PERF(high): Sending player list every tick means serializing all the
+            // connected IDs on every tick as well.
+            let msg = ws::Message::Text(serialized_player_list.clone());
+            player.socket.send(msg).await.unwrap();
             if let Some(ref invite) = player.inbound_invite {
                 if !player.notified_of_invite {
                     let notice = serde_json::to_string(&invite).unwrap();
