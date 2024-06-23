@@ -15,7 +15,7 @@ public class Chessman : MonoBehaviour
     public int jumpSteps = 60; // 
     public float rotationSpeed = 1;
     public float maxAngle = 1f;
-    public Quaternion startRotation;
+    private Quaternion startRotation;
 
     //TESTING VARIABLES
     public Transform target;
@@ -28,8 +28,6 @@ public class Chessman : MonoBehaviour
         animator = GetComponent<Animator>();
         controller = GetComponent<CharacterController>();
         startRotation = transform.rotation;
-
-        Debug.Log("Start Rotation: " + startRotation);
     }
 
     void Update()
