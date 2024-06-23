@@ -5,14 +5,16 @@ using UnityEngine;
 public class Piece : MonoBehaviour
 {
     private string type = "";
-    private Tile currentTile = null;
+    public Tile currentTile = null;
     private int pwnDirection = 1;
-    private string color = "";
+    private string color = "white";
     public int cx, cy;
+    public Tile[,] board;
 
     // Start is called before the first frame update
     void Start()
     {
+
 
     }
 
@@ -22,12 +24,18 @@ public class Piece : MonoBehaviour
 
     }
 
-    void MoveSetPawn(Tile[,] board)
+    void OnMouseEnter()
+    {
+        MoveSetPawn(board);
+    }
+
+    public void MoveSetPawn(Tile[,] board)
     {
         int cx = currentTile.x;
         int cy = currentTile.y;
         List<Tile> validEmptyTiles = new List<Tile>();
         List<Tile> validAttackTiles = new List<Tile>();
+
 
         if (color == "black")
         {
@@ -48,5 +56,37 @@ public class Piece : MonoBehaviour
                 validAttackTiles.Add(board[cx + 1, cy - 1]);
             }
         }
+        else
+        {
+            if (board[cx, cy + 1].isOccupied == false)
+            {
+                validEmptyTiles.Add(board[cx, cy + 1]);
+                if (board[cx, cy + 2].isOccupied == false)
+                {
+                    validEmptyTiles.Add(board[cx, cy + 2]);
+                }
+            }
+            if (cx > 0 && board[cx + 1, cy + 1].isOccupied == true && board[cx + 1, cy + 1].piece.color != color)
+            {
+                validAttackTiles.Add(board[cx - 1, cy - 1]);
+            }
+            if (cx < 7 && board[cx + 1, cy + 1].isOccupied == true && board[cx + 1, cy + 1].piece.color != color)
+            {
+                validAttackTiles.Add(board[cx + 1, cy + 1]);
+            }
+        }
+
+
+
+        validEmptyTiles.ForEach(delegate (Tile tile)
+        {
+            tile.changeColor(Color.green);
+            Debug.Log(tile);
+        });
+
+        validAttackTiles.ForEach(delegate (Tile tile)
+        {
+            tile.changeColor(null);
+        });
     }
 }

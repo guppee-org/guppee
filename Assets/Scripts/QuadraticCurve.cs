@@ -21,4 +21,3 @@ public class QuadraticCurve
         Vector3 cb = Vector3.Lerp(C, B, t);
         return Vector3.Lerp(ac, cb, t);
     }
-}
