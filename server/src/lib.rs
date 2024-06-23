@@ -6,11 +6,11 @@ use std::future::IntoFuture;
 use axum::{routing::get, Json, Router};
 use tokio::{net::TcpListener, select};
 use tower_http::{services::ServeDir, trace::TraceLayer};
-use tracing::{debug, error, info, instrument, trace, Level};
+use tracing::{info, instrument, trace, Level};
 
 use crate::actor::{Actor, Handle, PlayerId};
 
-/// Result alias for [`Error`].
+/// Result alias for [`error::Error`].
 pub type Result<T, E = error::Error> = std::result::Result<T, E>;
 
 /// The directory being served by the server.
@@ -64,16 +64,13 @@ async fn player_list(handle: Handle) -> Result<Json<Vec<PlayerId>>> {
     Ok(Json(list))
 }
 
-#[instrument(skip_all, ret(level = Level::DEBUG))]
+#[instrument(skip_all, fields(registration))]
 pub async fn websocket_handler(
     handle: Handle,
     ws: axum::extract::WebSocketUpgrade,
 ) -> axum::response::Response {
-    let callback = move |ws| async move {
-        match handle.register(ws).await {
-            Ok(_) => debug!(server.actor = "registered"),
-            Err(err) => error!(server.actor = format!("registration failure: {err}")),
-        }
-    };
-    ws.on_upgrade(callback)
+    ws.on_upgrade(move |ws| async move {
+        let registration = handle.register(ws).await;
+        tracing::Span::current().record("registration", format!("{registration:?}"));
+    })
 }
