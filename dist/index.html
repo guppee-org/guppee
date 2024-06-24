@@ -21,7 +21,9 @@
   <body class="container">
     <nav class="navbar bg-body-tertiary fixed-top">
       <div class="container-fluid">
-        <a class="navbar-brand" href="#">Guppee ~</a>
+        <a class="navbar-brand" href="#"
+          >Guppee [UserId: <span id="playerId"></span
+        >]</a>
         <button
           class="navbar-toggler btn btn-secondary"
           type="button"
@@ -30,7 +32,7 @@
         >
           <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="offcanvas offcanvas-top" tabindex="-1" id="navBar">
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="navBar">
           <div class="offcanvas-header">
             <h5 class="offcanvas-title">Players</h5>
             <button class="btn-close" data-bs-dismiss="offcanvas"></button>
@@ -61,12 +63,6 @@
     </nav>
     <script>
       start_socket();
-      function fetch_resources() {
-        return new Promise((resolve) => {
-          player_list();
-        });
-      }
-      fetch_resources();
     </script>
   </body>
 </html>
