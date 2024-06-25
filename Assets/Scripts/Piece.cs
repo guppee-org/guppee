@@ -4,10 +4,10 @@ using UnityEngine;
 
 public class Piece : MonoBehaviour
 {
-    private string type = "";
+    protected string type = "";
     public Tile currentTile = null;
-    private int pwnDirection = 1;
-    private string color = "white";
+    protected int pwnDirection = 1;
+    protected string color = "white";
     public int cx, cy;
     public Tile[,] board;
 
@@ -26,67 +26,65 @@ public class Piece : MonoBehaviour
 
     void OnMouseEnter()
     {
-        MoveSetPawn(board);
+        Debug.Log("mouse enter");
+        GetMoveSet(board);
     }
 
-    public void MoveSetPawn(Tile[,] board)
+    void OnMouseExit()
     {
+        Board board = GameObject.Find("BoardMain").GetComponent<Board>();
+        if (board != null)
+        {
+            board.ResetTileColors();
+        }
+    }
+
+    protected virtual void GetMoveSet(Tile[,] board) { }
+
+    protected virtual List<(int, int)> GetMoveOffsets()
+    {
+        return new List<(int, int)>();
+    }
+
+    protected virtual List<(int, int)> GetAttackOffsets()
+    {
+        return new List<(int, int)>();
+    }
+
+
+    protected void GetValidMoves(Tile[,] board)
+    {
+        List<(int, int)> moveOffsets = GetMoveOffsets();
+        List<(int, int)> attackOffsets = GetAttackOffsets();
+
+        Debug.Log("moves: " + string.Join(", ", moveOffsets));
+        Debug.Log("attacks: " + string.Join(", ", attackOffsets));
+
         int cx = currentTile.x;
         int cy = currentTile.y;
-        List<Tile> validEmptyTiles = new List<Tile>();
-        List<Tile> validAttackTiles = new List<Tile>();
 
+        foreach (var offset in moveOffsets)
+        {
+            int newX = cx + offset.Item1;
+            int newY = cy + offset.Item2;
 
-        if (color == "black")
-        {
-            if (board[cx, cy - 1].isOccupied == false)
+            if (newX >= 0 && newX < 8 && newY >= 0 && newY < 8 && board[newX, newY].isOccupied == false)
             {
-                validEmptyTiles.Add(board[cx, cy - 1]);
-                if (board[cx, cy - 2].isOccupied == false)
-                {
-                    validEmptyTiles.Add(board[cx, cy - 2]);
-                }
-            }
-            if (cx > 0 && board[cx - 1, cy - 1].isOccupied == true && board[cx - 1, cy - 1].piece.color != color)
-            {
-                validAttackTiles.Add(board[cx - 1, cy - 1]);
-            }
-            if (cx < 7 && board[cx + 1, cy - 1].isOccupied == true && board[cx + 1, cy - 1].piece.color != color)
-            {
-                validAttackTiles.Add(board[cx + 1, cy - 1]);
-            }
-        }
-        else
-        {
-            if (board[cx, cy + 1].isOccupied == false)
-            {
-                validEmptyTiles.Add(board[cx, cy + 1]);
-                if (board[cx, cy + 2].isOccupied == false)
-                {
-                    validEmptyTiles.Add(board[cx, cy + 2]);
-                }
-            }
-            if (cx > 0 && board[cx + 1, cy + 1].isOccupied == true && board[cx + 1, cy + 1].piece.color != color)
-            {
-                validAttackTiles.Add(board[cx - 1, cy - 1]);
-            }
-            if (cx < 7 && board[cx + 1, cy + 1].isOccupied == true && board[cx + 1, cy + 1].piece.color != color)
-            {
-                validAttackTiles.Add(board[cx + 1, cy + 1]);
+                board[newX, newY].changeColor(Color.green);
             }
         }
 
-
-
-        validEmptyTiles.ForEach(delegate (Tile tile)
+        foreach (var offset in attackOffsets)
         {
-            tile.changeColor(Color.green);
-            Debug.Log(tile);
-        });
+            int newX = cx + offset.Item1;
+            int newY = cy + offset.Item2;
 
-        validAttackTiles.ForEach(delegate (Tile tile)
-        {
-            tile.changeColor(null);
-        });
+            if (newX >= 0 && newX < 8 && newY >= 0 && newY < 8 && board[newX, newY].isOccupied && board[newX, newY].piece.color != color)
+            {
+                board[newX, newY].changeColor(Color.red);
+            }
+        }
     }
+
 }
+

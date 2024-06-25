@@ -10,7 +10,12 @@ public class Tile : MonoBehaviour
     public int x;
     public int y;
     public Piece piece;
+    public Color baseColor;
 
+    public override string ToString()
+    {
+        return $"Tile {position} at ({x}, {y}), isOccupied: {isOccupied}";
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -64,9 +69,9 @@ public class Tile : MonoBehaviour
         //
     }
 
-    public void changeColor(Color? color)
+    public void changeColor(Color color)
     {
-        this.GetComponent<Renderer>().material.color = color != null ? Color.green : Color.blue;
+        this.GetComponent<Renderer>().material.color = color;
     }
 }
 
