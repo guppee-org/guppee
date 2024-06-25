@@ -25,36 +25,46 @@ public class Board : MonoBehaviour
             color = !color;
             for (int j = 0; j < 8; j++)
             {
-                GameObject tile = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                tile.transform.position = new Vector3((i * cellSize) - offset, boardHeight, (j * cellSize) - offset);
-                tile.transform.localScale = new Vector3(cellSize, 0.1f, cellSize);
-                tile.transform.parent = this.transform;
-                tile.AddComponent<Tile>();
+                GameObject tileGO = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                tileGO.transform.position = new Vector3((i * cellSize) - offset, boardHeight, (j * cellSize) - offset);
+                tileGO.transform.localScale = new Vector3(cellSize, 0.1f, cellSize);
+                tileGO.transform.parent = this.transform;
+                Tile tile = tileGO.AddComponent<Tile>();
                 tile.GetComponent<Tile>().x = i;
                 tile.GetComponent<Tile>().y = j;
                 tile.GetComponent<Tile>().position = i.ToString() + j.ToString();
                 board[i, j] = tile.GetComponent<Tile>();
                 if (color)
                 {
-                    tile.GetComponent<Renderer>().material.color = Color.black;
+                    tile.baseColor = Color.black;
+                    tile.changeColor(Color.black);
                 }
                 else
                 {
-                    tile.GetComponent<Renderer>().material.color = Color.white;
+                    tile.baseColor = Color.white;
+                    tile.changeColor(Color.white);
                 }
                 color = !color;
             }
         }
         // board[0, 0].piece = new Piece(PieceType.ROOK, true);
-        Piece pawn = Instantiate(pawnPrefab, board[0, 0].transform.position, transform.rotation).AddComponent(typeof(Piece)) as Piece;
+        Pawn pawn = Instantiate(pawnPrefab, board[0, 0].transform.position, transform.rotation).AddComponent(typeof(Pawn)) as Pawn;
         pawn.board = board;
         pawn.currentTile = board[0, 0];
-        board[0, 0].piece = pawn.GetComponent<Piece>();
+        board[0, 0].piece = pawn.GetComponent<Pawn>();
     }
 
     // Update is called once per frame
     void Update()
     {
 
+    }
+
+    public void ResetTileColors()
+    {
+        foreach (var tile in board)
+        {
+            tile.changeColor(tile.baseColor);
+        }
     }
 }
