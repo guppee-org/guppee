@@ -21,52 +21,6 @@ public class Tile : MonoBehaviour
     void Start()
     {
 
-
-    }
-
-    // void OnMouseEnter()
-    // {
-    //     isHilighted = true;
-    // }
-    //
-    // void OnMouseExit()
-    // {
-    //     isHilighted = false;
-    // }
-    //
-    // Update is called once per frame
-    void Update()
-    {
-        // if (isHilighted)
-        // {
-        //     this.GetComponent<Renderer>().material.color = Color.green;
-        // }
-        // else
-        // {
-        //     if (x % 2 == 0)
-        //     {
-        //         if (y % 2 == 0)
-        //         {
-        //             this.GetComponent<Renderer>().material.color = Color.white;
-        //         }
-        //         else
-        //         {
-        //             this.GetComponent<Renderer>().material.color = Color.black;
-        //         }
-        //     }
-        //     else
-        //     {
-        //         if (y % 2 == 0)
-        //         {
-        //             this.GetComponent<Renderer>().material.color = Color.black;
-        //         }
-        //         else
-        //         {
-        //             this.GetComponent<Renderer>().material.color = Color.white;
-        //         }
-        //     }
-        // }
-        //
     }
 
     public void changeColor(Color color)
