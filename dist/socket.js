@@ -1,5 +1,5 @@
 function start_socket() {
-  const url = "ws://" + location.host + "/ws";
+  const url = `${location.protocol == "https" ? "wss" : "ws"}://${location.host}/ws`;
   const ws = new WebSocket(url);
   var whoami = null;
 
