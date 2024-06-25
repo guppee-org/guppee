@@ -30,9 +30,9 @@ public class Board : MonoBehaviour
                 tileGO.transform.localScale = new Vector3(cellSize, 0.1f, cellSize);
                 tileGO.transform.parent = this.transform;
                 Tile tile = tileGO.AddComponent<Tile>();
-                tile.GetComponent<Tile>().x = i;
-                tile.GetComponent<Tile>().y = j;
-                tile.GetComponent<Tile>().position = i.ToString() + j.ToString();
+                tile.x = i;
+                tile.y = j;
+                tile.position = i.ToString() + j.ToString();
                 board[i, j] = tile.GetComponent<Tile>();
                 if (color)
                 {

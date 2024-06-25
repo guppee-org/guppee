@@ -33,11 +33,5 @@ public class Pawn : Piece
     {
         int direction = color == "black" ? -1 : 1;
         return new List<(int, int)> { (-1, direction), (1, direction) };
-
-    }
-
-    protected override void GetMoveSet(Tile[,] board)
-    {
-        GetValidMoves(board);
     }
 }

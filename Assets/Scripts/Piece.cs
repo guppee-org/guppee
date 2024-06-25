@@ -39,7 +39,10 @@ public class Piece : MonoBehaviour
         }
     }
 
-    protected virtual void GetMoveSet(Tile[,] board) { }
+    protected void GetMoveSet(Tile[,] board)
+    {
+        GetValidMoves(board);
+    }
 
     protected virtual List<(int, int)> GetMoveOffsets()
     {
