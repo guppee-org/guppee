@@ -1,0 +1,3 @@
+[build]
+# Workaround for RUSTFLAGS being reset when building for different targets.
+target = ["x86_64-unknown-linux-gnu"] 
