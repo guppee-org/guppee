@@ -1,10 +1,3 @@
-//! Actor framework for interacting with a connected pool of players.
-//!
-//! # Entry points
-//! * [`Actor::start`] - Initialize the actor.
-//! * [`Handle`] - Communication handle.
-//! * [`Message`] - Message spec.
-
 use std::{collections::HashMap, convert::Infallible, time::Duration};
 
 use axum::{
