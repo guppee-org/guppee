@@ -9,7 +9,7 @@ RUN rustup default nightly
 
 
 COPY dist /dist
-COPY server /server
+COPY crates /crates
 
 EXPOSE 8081
-ENTRYPOINT cargo run --manifest-path=server/Cargo.toml --release
+ENTRYPOINT cargo run --manifest-path=crates/server/Cargo.toml --release
