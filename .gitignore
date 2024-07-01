@@ -71,3 +71,4 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 
 # Built folder
+/todo.txt
