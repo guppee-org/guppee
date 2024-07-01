@@ -8,7 +8,7 @@ pub use crate::{
     time::{Age, Timestamp},
 };
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct PlayerList {
     sent: Timestamp,
     content: Vec<Player>,
