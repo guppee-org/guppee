@@ -4,11 +4,12 @@ mod error;
 use std::future::IntoFuture;
 
 use axum::{routing::get, Json, Router};
+use shared::PlayerId;
 use tokio::{net::TcpListener, select};
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing::{info, instrument, trace, Level};
 
-use crate::actor::{Actor, Handle, PlayerId};
+use crate::actor::{Actor, Handle};
 
 /// Result alias for [`error::Error`].
 pub type Result<T, E = error::Error> = std::result::Result<T, E>;

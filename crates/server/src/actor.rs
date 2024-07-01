@@ -15,23 +15,22 @@ use axum::{
     },
     http::request::Parts,
 };
-use serde::{Deserialize, Serialize};
+use shared::{Player, PlayerId};
 use tokio::{
     select,
     sync::{mpsc, oneshot},
     time::sleep,
 };
 use tracing::{debug, error, info, instrument, trace, warn, Level};
-use uuid::Uuid;
 
 use crate::Result;
 
 /// Message buffer for the [`Actor`]'s [`mpsc::Receiver`].
-const BUFFER_SIZE: usize = 10;
+const BUFFER_SIZE: usize = 50;
 
 /// Actor framework for connected [`Player`]s.
 ///
-/// Receives [`Message`]s through the [`Handle`].
+/// Receives [`ActorMessage`]s through the [`Handle`].
 pub struct Actor;
 
 impl Actor {
@@ -50,7 +49,7 @@ impl Actor {
     }
 
     #[instrument(skip_all, level = Level::TRACE)]
-    async fn on_tick(map: &mut HashMap<PlayerId, Player>) {
+    async fn on_tick(map: &mut HashMap<PlayerId, PlayerState>) {
         // PERF(low): Have a fixed buffer higher up in the call stack.
         let mut made_games = Vec::new();
         let mut drop_list = Vec::new();
@@ -93,12 +92,9 @@ impl Actor {
         }
 
         for (p1id, p2id) in made_games {
-            if let Some(p1) = map.remove(&p1id) {
-                if let Some(p2) = map.remove(&p2id) {
-                    tokio::spawn(async move {
-                        let ids = [p1.id(), p2.id()];
-                        let result = play_game(p1, p2).await;
-                    });
+            if let Some(_p1) = map.remove(&p1id) {
+                if let Some(_p2) = map.remove(&p2id) {
+                    tokio::spawn(async move { todo!("implement proxy of two players playing") });
                 }
             }
         }
@@ -106,7 +102,7 @@ impl Actor {
         for dead_socket in drop_list {
             let dropping = map.remove(&dead_socket).expect("no interior mutability");
             trace!(drop.player = %dropping.id());
-            let Player {
+            let PlayerState {
                 outbound_invite,
                 inbound_invite,
                 ..
@@ -125,8 +121,8 @@ impl Actor {
     }
 
     #[instrument(skip_all)]
-    async fn run_loop(mut receiver: mpsc::Receiver<Message>) -> Result<()> {
-        let mut pool = HashMap::<PlayerId, Player>::new();
+    async fn run_loop(mut receiver: mpsc::Receiver<ActorMessage>) -> Result<()> {
+        let mut pool = HashMap::<PlayerId, PlayerState>::new();
         loop {
             select! {
                 Some(message) = receiver.recv() => {
@@ -145,20 +141,23 @@ impl Actor {
         Ok(())
     }
 
-    async fn on_message(map: &mut HashMap<PlayerId, Player>, message: Message) -> Result<()> {
+    async fn on_message(
+        map: &mut HashMap<PlayerId, PlayerState>,
+        message: ActorMessage,
+    ) -> Result<()> {
         match message {
-            Message::Register(socket) => {
-                let player = Player::new(socket).await?;
+            ActorMessage::Register(socket) => {
+                let player = PlayerState::new(socket).await?;
                 if let Some(existing) = map.insert(player.id(), player) {
                     debug!("a player attempted to register twice: {existing:?}");
                 }
             }
-            Message::PlayerList(reply) => {
+            ActorMessage::PlayerList(reply) => {
                 let player_list = map.keys().cloned().collect();
                 let send_result = reply.send(player_list);
                 debug!(?send_result);
             }
-            Message::Invite(invite) => {
+            ActorMessage::Invite(invite) => {
                 let Invite {
                     sender_id,
                     target_id,
@@ -193,26 +192,18 @@ impl Actor {
     }
 }
 
-#[allow(unused)]
-async fn play_game(player1: Player, player2: Player) -> Result<()> {
-    Ok(()) // TODO: Proxy the connections
-}
-
-#[derive(Debug, Serialize)]
-pub struct Player {
-    id: PlayerId,
+#[derive(Debug)]
+pub struct PlayerState {
+    player: Player,
     /// Has this player invited another player to a game?
     outbound_invite: Option<PlayerId>,
     inbound_invite: Option<PlayerId>,
     notified_of_invite: bool,
     accepted_invite: bool,
-    #[serde(skip_serializing)] // This cannot be serialized to the client
-    #[allow(dead_code)]
     socket: WebSocket,
 }
 
-impl Player {
-    /// Returns a [`Player`] and sends a [`PlayerId`] to the client.
+impl PlayerState {
     #[instrument(skip_all)]
     async fn new(mut socket: WebSocket) -> Result<Self> {
         let id = PlayerId::default();
@@ -220,7 +211,7 @@ impl Player {
         socket.send(ws::Message::Text(initial_response)).await?;
         Ok(Self {
             socket,
-            id,
+            player: Default::default(),
             accepted_invite: Default::default(),
             outbound_invite: Default::default(),
             inbound_invite: Default::default(),
@@ -228,36 +219,16 @@ impl Player {
         })
     }
 
-    /// Returns the [`PlayerId`] for this [`Player`].
+    /// Returns the [`PlayerId`].
     pub fn id(&self) -> PlayerId {
-        self.id
-    }
-}
-
-/// Unique identifier for the [`Player`].
-#[derive(Clone, Copy, Deserialize, Serialize, Debug, PartialEq, Eq, Hash)]
-pub struct PlayerId {
-    uuid: Uuid,
-}
-
-impl Default for PlayerId {
-    fn default() -> Self {
-        Self {
-            uuid: Uuid::new_v4(),
-        }
-    }
-}
-
-impl std::fmt::Display for PlayerId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.uuid)
+        self.player.id()
     }
 }
 
 /// Cheaply cloneable message sender for the [`Actor`] to receive on.
 #[derive(Clone, Debug)]
 pub struct Handle {
-    sender: mpsc::Sender<Message>,
+    sender: mpsc::Sender<ActorMessage>,
 }
 
 impl Handle {
@@ -265,7 +236,7 @@ impl Handle {
     #[instrument(skip_all, level = Level::TRACE)]
     pub async fn players(&self) -> Result<Vec<PlayerId>> {
         let (sender, receiver) = oneshot::channel();
-        self.sender.send(Message::PlayerList(sender)).await?;
+        self.sender.send(ActorMessage::PlayerList(sender)).await?;
         let player_list = receiver.await?;
         Ok(player_list)
     }
@@ -273,7 +244,7 @@ impl Handle {
     /// Register an incoming [`WebSocket`] as a [`Player`]
     #[instrument(skip_all, level = Level::TRACE)]
     pub async fn register(&self, socket: WebSocket) -> Result<()> {
-        self.sender.send(Message::Register(socket)).await?;
+        self.sender.send(ActorMessage::Register(socket)).await?;
         Ok(())
     }
 }
@@ -285,12 +256,9 @@ pub struct Invite {
 }
 
 /// Requests and their related responses for the [`Actor`].
-pub enum Message {
+pub enum ActorMessage {
     /// Register a [`WebSocket`] for conversion to a [`Player`], adding to the
     /// pool.
-    // TODO: make sure this works.
-    // Once the socket is assigned a [`PlayerId`] a JSON representation of a [`Player`]
-    // will be pushed through the socket for client side confirmation.
     Register(WebSocket),
     /// Request a [`Vec`] of [`PlayerId`] from the [`Actor`].
     PlayerList(oneshot::Sender<Vec<PlayerId>>),

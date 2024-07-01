@@ -11,7 +11,7 @@ use crate::actor;
 pub enum Error {
     Runtime(#[from] tokio::io::Error),
     Parse(#[from] filter::ParseError),
-    Mpsc(#[from] mpsc::error::SendError<actor::Message>),
+    Mpsc(#[from] mpsc::error::SendError<actor::ActorMessage>),
     Oneshot(#[from] oneshot::error::RecvError),
     Serialization(#[from] serde_json::Error),
     Server(#[from] axum::Error),

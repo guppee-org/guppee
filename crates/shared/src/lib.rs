@@ -38,7 +38,7 @@ impl IntoIterator for PlayerList {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Invited {
     sent: Timestamp,
     sender: Player,
