@@ -20,7 +20,7 @@ impl Default for PlayerId {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Player {
     id: PlayerId,
     #[serde(default)]
