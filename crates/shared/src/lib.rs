@@ -14,6 +14,12 @@ pub struct PlayerList {
     content: Vec<Player>,
 }
 
+impl PlayerList {
+    pub fn new() -> Self {
+        Default::default()
+    }
+}
+
 impl FromIterator<Player> for PlayerList {
     fn from_iter<T: IntoIterator<Item = Player>>(iter: T) -> Self {
         PlayerList {
