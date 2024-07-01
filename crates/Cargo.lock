@@ -917,6 +917,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "uuid",
+ "wasm-bindgen",
 ]
 
 [[package]]

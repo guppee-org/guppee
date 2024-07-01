@@ -10,3 +10,4 @@ tracing = { workspace = true }
 thiserror = { workspace = true }
 chrono = { version = "0.4.38", features = ["serde"] }
 uuid = { workspace = true }
+wasm-bindgen = "0.2.92"
