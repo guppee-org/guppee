@@ -82,7 +82,7 @@ impl RetractInvite {
 
 /// Messages that originate from the server.
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum Server {
+pub enum ServerMessage {
     /// Server notifies the client that the member pool has updated.
     // A more performant way to make this update would be to only communicate
     // the addition or removal of players rather than sending down the whole
@@ -93,4 +93,27 @@ pub enum Server {
     /// Server notifies the client that any invites from the attached player
     /// should be dropped.
     RetractInvite(RetractInvite),
+}
+
+impl ServerMessage {
+    pub fn to_json(&self) -> serde_json::Result<String> {
+        serde_json::to_string(self)
+    }
+
+    pub fn from_json(s: &str) -> serde_json::Result<Self> {
+        serde_json::from_str(s)
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum ClientMessage {}
+
+impl ClientMessage {
+    pub fn from_json(s: &str) -> serde_json::Result<Self> {
+        serde_json::from_str(s)
+    }
+
+    pub fn to_json(&self) -> serde_json::Result<String> {
+        serde_json::to_string(self)
+    }
 }
