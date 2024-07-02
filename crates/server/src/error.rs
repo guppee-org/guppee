@@ -1,9 +1,7 @@
-use axum::Json;
+use axum::{extract::ws::WebSocket, Json};
 use tokio::sync::{mpsc, oneshot};
 use tracing::error;
 use tracing_subscriber::filter;
-
-use crate::actor;
 
 /// [`crate`] error types.
 #[derive(thiserror::Error, Debug)]
@@ -11,10 +9,11 @@ use crate::actor;
 pub enum Error {
     Runtime(#[from] tokio::io::Error),
     Parse(#[from] filter::ParseError),
-    Mpsc(#[from] mpsc::error::SendError<actor::ActorMessage>),
+    Register(#[from] mpsc::error::SendError<WebSocket>),
     Oneshot(#[from] oneshot::error::RecvError),
     Serialization(#[from] serde_json::Error),
     Server(#[from] axum::Error),
+    Erased(Box<dyn std::error::Error + Send + Sync>),
 }
 
 impl axum::response::IntoResponse for Error {
@@ -23,5 +22,11 @@ impl axum::response::IntoResponse for Error {
         // over http instead of ws.
         error!(server.error = self.to_string());
         Json(self.to_string()).into_response()
+    }
+}
+
+impl Error {
+    pub fn erased(e: impl std::error::Error + Send + Sync + 'static) -> Self {
+        Self::Erased(Box::new(e))
     }
 }

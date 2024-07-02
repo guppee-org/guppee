@@ -4,26 +4,51 @@ use std::{
 };
 
 use axum::extract::ws::{Message, WebSocket};
-use futures::{
-    stream::{SplitSink, SplitStream},
-    Sink, SinkExt, Stream, StreamExt,
-};
+use futures::{Sink, SinkExt, Stream, StreamExt};
 use shared::{ClientMessage, ServerMessage};
 
 use crate::{error::Error, Result};
 
-/// Generic wrapper over an async stream to allow testing without a websocket
-/// connection.
-pub struct Socket<Tx = SplitSink<WebSocket, Message>, Rx = SplitStream<WebSocket>> {
-    sender: Tx,
-    receiver: Rx,
+/// TRAIT ALIAS
+#[doc(hidden)]
+pub trait Threaded: Unpin + Send + Sync + 'static {}
+impl<T> Threaded for T where T: Unpin + Send + Sync + 'static {}
+
+/// TRAIT ALIAS
+#[doc(hidden)]
+pub trait ThreadedSink: Threaded + Sink<Message, Error = axum::Error> {}
+impl<T> ThreadedSink for T where T: Threaded + Sink<Message, Error = axum::Error> {}
+
+/// TRAIT ALIAS
+#[doc(hidden)]
+pub trait ThreadedStream: Threaded + Stream<Item = Result<Message, axum::Error>> {}
+impl<T> ThreadedStream for T where T: Threaded + Stream<Item = Result<Message, axum::Error>> {}
+
+pub struct Socket {
+    receiver: Box<dyn ThreadedStream>,
+    sender: Box<dyn ThreadedSink>,
 }
 
-impl<Tx, Rx> Stream for Socket<Tx, Rx>
-where
-    Tx: Unpin,
-    Rx: Stream<Item = Result<Message, axum::Error>> + Unpin,
-{
+impl std::fmt::Debug for Socket {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Socket")
+            .field("receiver", &"Box(..)")
+            .field("sender", &"Box(..)")
+            .finish()
+    }
+}
+
+impl From<WebSocket> for Socket {
+    fn from(value: WebSocket) -> Self {
+        let (sender, receiver) = value.split();
+        Self {
+            sender: Box::new(sender),
+            receiver: Box::new(receiver),
+        }
+    }
+}
+
+impl Stream for Socket {
     type Item = Result<ClientMessage>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
@@ -39,12 +64,7 @@ where
     }
 }
 
-impl<Tx, Rx> Sink<ServerMessage> for Socket<Tx, Rx>
-where
-    Tx: Sink<Message> + Unpin,
-    Rx: Unpin,
-    Tx::Error: Into<Error>,
-{
+impl Sink<ServerMessage> for Socket {
     type Error = Error;
 
     fn poll_ready(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {

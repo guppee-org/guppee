@@ -117,3 +117,10 @@ impl ClientMessage {
         serde_json::to_string(self)
     }
 }
+
+#[macro_export]
+macro_rules! own {
+    ($($ident:ident),* $(,)?) => {
+        $( let $ident = $ident.to_owned(); )*
+    };
+}
