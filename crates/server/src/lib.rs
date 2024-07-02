@@ -1,5 +1,6 @@
 mod actor;
 mod error;
+mod socket;
 
 use std::future::IntoFuture;
 
